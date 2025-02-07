@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  app:
+    build: 
+      dockerfile: ./Dockerfile
+      context: ./
+    volumes:
+      - .:/app
+    ports:
+      - 8000:8000
+    environment:
+      DATABASE_URL: "${DATABASE_URL}"
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    command: ["postgres", "-c", "log_statement=all"]
+
+  lint:
+    build: .
+    command: flake8 && black --check . && isort --check .
+
+
+volumes:
+  pgdata:
