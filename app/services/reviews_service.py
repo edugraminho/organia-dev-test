@@ -1,5 +1,4 @@
 from typing import List, Any
-from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from fastapi import APIRouter, HTTPException
 from app.models.models import Review, SentimentAnalysis
@@ -10,6 +9,23 @@ router = APIRouter()
 
 
 def process_create_review(db: Session, review_data: dict) -> dict:
+    """
+    Creates a new customer review and performs sentiment analysis.
+
+    Args:
+        db (Session): The database session.
+        review_data (dict): A dictionary containing the review details:
+            - "customer_name" (str): Name of the customer who wrote the review.
+            - "review_text" (str): The content of the review.
+            - "sentiment" (str): The sentiment classification (must be "positiva", "negativa", or "neutra").
+            - "review_date" (str): The date of the review in "YYYY-MM-DD" format.
+
+    Raises:
+        HTTPException: If required fields are missing or have invalid values.
+
+    Returns:
+        dict: A dictionary containing the created review details, including sentiment analysis.
+    """
     required_fields: list[str] = [
         "customer_name",
         "review_text",
@@ -82,6 +98,15 @@ def process_create_review(db: Session, review_data: dict) -> dict:
 
 
 def process_get_all_reviews(db: Session) -> dict[str, Any] | dict[str, list]:
+    """
+    Retrieves all stored customer reviews.
+
+    Args:
+        db (Session): The database session.
+
+    Returns:
+        dict: A dictionary containing a list of all reviews, or a 404 message if none are found.
+    """
     reviews_list: List[Review] = db.query(Review).all()
 
     if not reviews_list:
@@ -108,6 +133,16 @@ def process_get_all_reviews(db: Session) -> dict[str, Any] | dict[str, list]:
 def process_get_review_by_id(
     db: Session, review_id: int
 ) -> dict[str, Any] | dict[str, list]:
+    """
+    Retrieves a specific customer review by its ID.
+
+    Args:
+        db (Session): The database session.
+        review_id (int): The ID of the review to retrieve.
+
+    Returns:
+        dict: A dictionary containing the review details, or a 404 message if not found.
+    """
     review: Review = db.query(Review).filter(Review.id == review_id).first()
 
     if not review:
@@ -128,6 +163,20 @@ def process_get_review_by_id(
 
 
 def process_reviews_report(db: Session, start_date: str, end_date: str) -> dict:
+    """
+    Generates a report of customer reviews within a specified date range.
+
+    Args:
+        db (Session): The database session.
+        start_date (str): The start date in "YYYY-MM-DD" format.
+        end_date (str): The end date in "YYYY-MM-DD" format.
+
+    Raises:
+        HTTPException: If the date format is invalid.
+
+    Returns:
+        dict: A report containing the total number of reviews and a breakdown by sentiment.
+    """
     try:
         start_timestamp: int = convert_date_to_timestamp(start_date, "%Y-%m-%d")
         end_timestamp: int = convert_date_to_timestamp(end_date, "%Y-%m-%d")

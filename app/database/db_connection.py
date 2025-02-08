@@ -12,6 +12,15 @@ Base.metadata.create_all(bind=engine)
 
 
 def get_db():
+    """
+    Provides a database session.
+
+    This function generates a SQLAlchemy session (`SessionLocal`) and ensures
+    that the connection is properly closed after use.
+
+    Yields:
+        Session: A SQLAlchemy session for database interaction.
+    """
     db = SessionLocal()
     try:
         yield db

@@ -10,6 +10,16 @@ client = openai.OpenAI(
 
 
 class ReviewDetails(BaseModel):
+    """
+    Represents the sentiment analysis result for a given review.
+
+    Attributes:
+        sentiment (str): The general sentiment classification (e.g., "positive", "negative", "neutral").
+        score (float): A sentiment score ranging from -1 (very negative) to 1 (very positive).
+        keywords (list[str]): List of key positive and negative words that influenced the sentiment.
+        explanation (str): A brief explanation of the sentiment analysis result.
+    """
+
     sentiment: str
     score: float
     keywords: list[str]
@@ -17,7 +27,19 @@ class ReviewDetails(BaseModel):
 
 
 def analyze_review_sentiment(review_text: str) -> dict:
+    """
+    Analyzes the sentiment of a given customer review using the Maritaca AI model.
 
+    Args:
+        review_text (str): The text of the customer review.
+
+    Returns:
+        dict: A dictionary containing the sentiment analysis result, including:
+            - "sentiment": The detected sentiment ("positive", "negative", or "neutral").
+            - "score": A numerical sentiment score (-1 to 1).
+            - "keywords": Key positive and negative words influencing the sentiment.
+            - "explanation": A short description explaining the sentiment classification.
+    """
     prompt = f"""
         Analise o sentimento do comentário a seguir e responda tudo em PORTUGUÊS-BR:
         'sentiment': O sentimento geral do comentário: 'positiva', 'negativa' ou 'neutra';
