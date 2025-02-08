@@ -10,6 +10,7 @@ services:
       - 8000:8000
     environment:
       DATABASE_URL: "${DATABASE_URL}"
+      MARITACA_API_KEY: "${MARITACA_API_KEY}"
     depends_on:
       - db
     restart: always

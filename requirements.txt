@@ -13,10 +13,5 @@ black==25.1.0
 isort==6.0.0
 
 # AI
-groq
-langchain==0.3.7
-langchain-groq
-streamlit==1.39.0
-langgraph==0.2.44
-chromadb==0.5.17
-protobuf
+openai==1.61.1
+maritalk

@@ -2,7 +2,12 @@
 from sqlalchemy.orm import Session
 from app.database.db_connection import get_db
 from app.schemas.review_schema import ReviewCreate
-from app.services.reviews_service import process_create_review, process_get_all_reviews, process_get_review_by_id, process_reviews_report
+from app.services.reviews_service import (
+    process_create_review,
+    process_get_all_reviews,
+    process_get_review_by_id,
+    process_reviews_report,
+)
 
 router = APIRouter()
 
@@ -20,11 +25,13 @@ def get_all_reviews(db: Session = Depends(get_db)) -> dict:
     return process_get_all_reviews(db)
 
 
+@router.get("/reviews/report")
+def get_reviews_report(
+    start_date: str, end_date: str, db: Session = Depends(get_db)
+) -> dict:
+    return process_reviews_report(db, start_date, end_date)
+
+
 @router.get("/reviews/{review_id}")
 def get_review_by_id(review_id: int, db: Session = Depends(get_db)) -> dict:
     return process_get_review_by_id(db, review_id)
-
-
-@router.get("/reviews/report")
-def get_reviews_report(start_date: str, end_date: str, db: Session = Depends(get_db)) -> dict:
-    return process_reviews_report(db, start_date, end_date)

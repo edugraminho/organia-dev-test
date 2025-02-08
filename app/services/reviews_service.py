@@ -1,9 +1,10 @@
 from typing import List, Any
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import APIRouter, HTTPException
-from app.models.models import Review
-from app.utils import convert_date_to_timestamp, convert_timestamp_to_date
+from app.models.models import Review, SentimentAnalysis
+from app.utils.utils import convert_date_to_timestamp, convert_timestamp_to_date
+from app.services.ai_service import analyze_review_sentiment
 
 router = APIRouter()
 
@@ -34,7 +35,9 @@ def process_create_review(db: Session, review_data: dict) -> dict:
         )
 
     try:
-        review_timestamp: int = convert_date_to_timestamp(review_data["review_date"])
+        review_timestamp: int = convert_date_to_timestamp(
+            review_data["review_date"], "%Y-%m-%d"
+        )
     except ValueError:
         raise HTTPException(
             status_code=400, detail="Formato de data inválido. Use YYYY-MM-DD."
@@ -50,6 +53,21 @@ def process_create_review(db: Session, review_data: dict) -> dict:
     db.add(new_review)
     db.commit()
     db.refresh(new_review)
+
+    sentiment_analysis_dict = analyze_review_sentiment(new_review.review_text)
+
+    new_analysis = SentimentAnalysis(
+        review_id=new_review.id,
+        sentiment=sentiment_analysis_dict.get("sentiment", ""),
+        score=sentiment_analysis_dict.get("score", 0.0),
+        keywords=",".join(sentiment_analysis_dict.get("keywords", [])),
+        explanation=sentiment_analysis_dict.get(
+            "explanation", "Análise sem explicação detalhada."
+        ),
+    )
+
+    db.add(new_analysis)
+    db.commit()
 
     return {
         "status": "OK",
@@ -117,26 +135,50 @@ def process_reviews_report(db: Session, start_date: str, end_date: str) -> dict:
     except ValueError:
         return {"status": 400, "message": "Formato de data inválido. Use YYYY-MM-DD."}
 
-    reviews_in_period = (
-        db.query(Review.sentiment, func.count(Review.id))
-        .filter(Review.review_date >= start_timestamp)
-        .filter(Review.review_date <= end_timestamp)
-        .group_by(Review.sentiment)
+    reviews: List[Review] = (
+        db.query(Review)
+        .options(joinedload(Review.sentiment_analysis))
+        .filter(
+            Review.review_date >= start_timestamp,
+            Review.review_date <= end_timestamp,
+        )
         .all()
     )
 
-    report = {
+    if not reviews:
+        return {"message": "Nenhuma avaliação encontrada no período informado."}
+
+    sentiment_mapping = {
+        "positiva": "positive",
+        "negativa": "negative",
+        "neutra": "neutral",
+    }
+
+    report: dict = {
+        "total_reviews": len(reviews),
         "positive": 0,
         "negative": 0,
         "neutral": 0,
+        "reviews": [],
     }
 
-    for sentiment, count in reviews_in_period:
-        if sentiment == "positive":
-            report["positive"] = count
-        elif sentiment == "negative":
-            report["negative"] = count
-        elif sentiment == "neutral":
-            report["neutral"] = count
+    for review in reviews:
+        analysis = review.sentiment_analysis
 
-    return {"status": 200, "report": report}
+        sentiment_en = sentiment_mapping.get(analysis.sentiment.lower(), "neutral")
+        report[sentiment_en] += 1
+
+        report["reviews"].append(
+            {
+                "id": review.id,
+                "customer_name": review.customer_name,
+                "review_date": convert_timestamp_to_date(review.review_date),
+                "review_text": review.review_text,
+                "sentiment": analysis.sentiment,
+                "score": analysis.score,
+                "keywords": analysis.keywords,
+                "explanation": analysis.explanation,
+            }
+        )
+
+    return report
