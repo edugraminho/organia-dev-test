@@ -138,6 +138,8 @@ GET /reviews/report Retorna um relatório de avaliações no período informado
 ---
 
 2️⃣ **Obter todos as avaliações** (`GET /reviews/`)
+**Usando a paginacao** (`GET /reviews/?page=1&size=5`)
+
 
 **📌 Resposta JSON:**
 
@@ -191,6 +193,8 @@ GET /reviews/report Retorna um relatório de avaliações no período informado
 
 `GET /reviews/report?start_date=2024-06-01&end_date=2024-06-30`
 
+**Usando a paginacao**
+`reviews/report/?page=1&size=5&start_date=2023-09-01&end_date=2025-09-17`
 
 **📌 Resposta JSON:**
 

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import review_route
+from fastapi_pagination import add_pagination
 
 app = FastAPI(
     title="API de Análise de Sentimentos",
@@ -21,6 +22,7 @@ app.add_middleware(
 
 app.include_router(review_route.router)
 
+add_pagination(app)
 
 @app.get("/")
 def get_health_check():

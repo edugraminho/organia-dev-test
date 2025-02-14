@@ -1,19 +1,14 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
+﻿from fastapi import APIRouter, Depends
+from fastapi_pagination import Page
 from sqlalchemy.orm import Session
 from app.database.db_connection import get_db
-from app.schemas.review_schema import ReviewCreate
-from app.services.reviews_service import (
-    process_create_review,
-    process_get_all_reviews,
-    process_get_review_by_id,
-    process_reviews_report,
-)
+from app.services.reviews_service import ReviewService, ReviewOut
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
 
 
 @router.post("/", status_code=201)
-def reviews_create(review_data: ReviewCreate, db: Session = Depends(get_db)) -> dict:
+def reviews_create(review_data: dict, db: Session = Depends(get_db)) -> dict:
     """
     Retrieves all stored reviews.
 
@@ -23,14 +18,11 @@ def reviews_create(review_data: ReviewCreate, db: Session = Depends(get_db)) -> 
     Returns:
         dict: A list of all reviews stored in the database.
     """
-    try:
-        return process_create_review(db, review_data.model_dump(by_alias=True))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return ReviewService(db).create_review(review_data)
 
 
 @router.get("/")
-def get_all_reviews(db: Session = Depends(get_db)) -> dict:
+def get_all_reviews(db: Session = Depends(get_db)) -> Page[ReviewOut]:
     """
     Retrieves all stored reviews.
 
@@ -40,7 +32,7 @@ def get_all_reviews(db: Session = Depends(get_db)) -> dict:
     Returns:
         dict: A list of all reviews stored in the database.
     """
-    return process_get_all_reviews(db)
+    return ReviewService(db).get_all_reviews()
 
 
 @router.get("/report")
@@ -58,7 +50,7 @@ def get_reviews_report(
     Returns:
         dict: A summary of the number of positive, negative, and neutral reviews within the specified period.
     """
-    return process_reviews_report(db, start_date, end_date)
+    return ReviewService(db).get_reviews_report(start_date, end_date)
 
 
 @router.get("/{review_id}")
@@ -73,4 +65,4 @@ def get_review_by_id(review_id: int, db: Session = Depends(get_db)) -> dict:
     Returns:
         dict: The requested review data or an error message if not found.
     """
-    return process_get_review_by_id(db, review_id)
+    return ReviewService(db).get_review_by_id(review_id)
